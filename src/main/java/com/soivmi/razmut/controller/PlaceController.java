@@ -2,9 +2,11 @@ package com.soivmi.razmut.controller;
 
 import com.soivmi.razmut.model.Place;
 import com.soivmi.razmut.repository.PlaceRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/places")
@@ -16,51 +18,32 @@ public class PlaceController {
         this.placeRepository = placeRepository;
     }
 
-    // POST /places
+    // 1️⃣ Добавление одного места
     @PostMapping
     public Place createPlace(@RequestBody Place place) {
         return placeRepository.save(place);
     }
 
-    // GET /places
+    // 2️⃣ Добавление нескольких мест за один запрос
+    @PostMapping("/batch")
+    public List<Place> createPlaces(@RequestBody List<Place> places) {
+        return placeRepository.saveAll(places);
+    }
+
+    // 3️⃣ Получение случайного места
+    @GetMapping("/random")
+    public ResponseEntity<Place> getRandomPlace() {
+        Optional<Place> randomPlace = placeRepository.findRandomPlace();
+        return randomPlace.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
+    // Дополнительно: GET всех мест с фильтром по типу
     @GetMapping
-    public List<Place> getAllPlaces() {
-        return placeRepository.findAll();
-    }
-
-    // GET /places/{id}
-    @GetMapping("/{id}")
-    public Place getPlaceById(@PathVariable Long id) {
-        return placeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Place not found with id " + id));
-    }
-
-    // GET /places?type=
-    @GetMapping(params = "type")
-    public List<Place> getPlacesByType(@RequestParam String type) {
-        return placeRepository.findByType(type);
-    }
-
-    // DELETE /places/{id}
-    @DeleteMapping("/{id}")
-    public void deletePlace(@PathVariable Long id) {
-        if (!placeRepository.existsById(id)) {
-            throw new IllegalArgumentException("Place not found with id " + id);
+    public List<Place> getPlaces(@RequestParam(required = false) String type) {
+        if (type != null) {
+            return placeRepository.findByTypeIgnoreCase(type);
         }
-        placeRepository.deleteById(id);
-    }
-
-    // PUT /places/{id}
-    @PutMapping("/{id}")
-    public Place updatePlace(@PathVariable Long id, @RequestBody Place updatedPlace) {
-        return placeRepository.findById(id)
-                .map(place -> {
-                    place.setName(updatedPlace.getName());
-                    place.setType(updatedPlace.getType());
-                    place.setLat(updatedPlace.getLat());
-                    place.setLng(updatedPlace.getLng());
-                    return placeRepository.save(place);
-                })
-                .orElseThrow(() -> new IllegalArgumentException("Place not found with id " + id));
+        return placeRepository.findAll();
     }
 }
