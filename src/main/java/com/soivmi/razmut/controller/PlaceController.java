@@ -46,4 +46,12 @@ public class PlaceController {
         }
         return placeRepository.findAll();
     }
+
+    @GetMapping("/random/{userId}")
+    public ResponseEntity<Place> getRandomPlaceForUser(@PathVariable Long userId) {
+        return placeRepository.findRandomPlaceNotChosenByUser(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
 }

@@ -15,4 +15,14 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     // Выбор случайного места
     @Query(value = "SELECT * FROM place ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
     Optional<Place> findRandomPlace();
+
+    @Query(value = """
+        SELECT * FROM place p
+        WHERE p.id NOT IN (
+            SELECT c.place_id FROM choice c WHERE c.user_id = :userId
+        )
+        ORDER BY RANDOM() LIMIT 1
+        """, nativeQuery = true)
+    Optional<Place> findRandomPlaceNotChosenByUser(Long userId);
+
 }
