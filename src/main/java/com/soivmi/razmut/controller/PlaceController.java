@@ -53,5 +53,14 @@ public class PlaceController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
+    @GetMapping("/liked/{userId}")
+    public List<Place> getLikedPlaces(@PathVariable Long userId) {
+        return placeRepository.findLikedPlacesByUser(userId);
+    }
+
+    @GetMapping("/disliked/{userId}")
+    public List<Place> getDislikedPlaces(@PathVariable Long userId) {
+        return placeRepository.findDislikedPlacesByUser(userId);
+    }
 
 }

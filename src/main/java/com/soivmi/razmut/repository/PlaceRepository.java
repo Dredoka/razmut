@@ -25,4 +25,18 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
         """, nativeQuery = true)
     Optional<Place> findRandomPlaceNotChosenByUser(Long userId);
 
+    @Query(value = """
+        SELECT p.* FROM place p
+        JOIN choice c ON p.id = c.place_id
+        WHERE c.user_id = :userId AND c.liked = true
+        """, nativeQuery = true)
+    List<Place> findLikedPlacesByUser(Long userId);
+
+    @Query(value = """
+        SELECT p.* FROM place p
+        JOIN choice c ON p.id = c.place_id
+        WHERE c.user_id = :userId AND c.liked = false
+        """, nativeQuery = true)
+    List<Place> findDislikedPlacesByUser(Long userId);
+
 }

@@ -53,4 +53,5 @@ public class ChoiceController {
     public List<Choice> getUserDislikes(@PathVariable Long userId) {
         return choiceRepository.findByUserIdAndLiked(userId, false);
     }
+
 }
