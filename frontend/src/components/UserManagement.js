@@ -1,25 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:8080/api/users')
       .then(res => res.json())
       .then(data => setUsers(data))
-      .finally(() => setLoading(false));
+      .catch(err => console.error('Ошибка при загрузке пользователей:', err));
   }, []);
-
-  if (loading) return <p>Загрузка пользователей...</p>;
 
   return (
     <div>
-      <h2>Управление пользователями</h2>
+      <h2>Список пользователей</h2>
       <ul>
-        {users.map(user => (
-          <li key={user.id}>
-            {user.name} (ID {user.id})
+        {users.map(u => (
+          <li key={u.id}>
+            <span>
+              {u.name || `ID ${u.id}`} -{' '}
+              <img
+                src={u.avatarUrl || 'https://picsum.photos/50'}
+                width={50}
+                alt="Аватар"
+                style={{ borderRadius: '50%' }}
+              />
+            </span>
           </li>
         ))}
       </ul>

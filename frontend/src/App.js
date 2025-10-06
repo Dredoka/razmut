@@ -6,18 +6,17 @@ import UserManagement from './components/UserManagement';
 import { useUser } from './context/UserContext';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('map'); // по умолчанию "Карта"
   const { user } = useUser();
+  const [activeTab, setActiveTab] = useState('map'); // карта по умолчанию
   const [activeAdminTab, setActiveAdminTab] = useState(null);
 
   const renderContent = () => {
-    // вкладки админ-панели
+    // если выбрана вкладка админ-панели
     if (activeAdminTab === 'users') return <UserManagement />;
     if (activeAdminTab === 'settings') return <div>Настройки сайта</div>;
 
-    // обычные вкладки
     switch(activeTab) {
-      case 'profile': return <Profile />;
+      case 'profile': return <Profile isAdmin={user?.isAdmin} />;
       case 'map': return <div>Карта</div>;
       case 'rexis': return <div>Рексис</div>;
       case 'messages': return <div>Сообщения</div>;
@@ -28,7 +27,7 @@ function App() {
 
   return (
     <div className="App">
-      <AdminPanel onSelectTab={setActiveAdminTab} />
+      {user?.isAdmin && <AdminPanel onSelectTab={setActiveAdminTab} />}
       <div className="content">
         {renderContent()}
       </div>
