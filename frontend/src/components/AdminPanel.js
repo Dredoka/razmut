@@ -1,27 +1,12 @@
 import React from 'react';
 
-function AdminPanel({ onSelectTab, activeTab }) {
-  const tabs = [
-    { key: 'users', label: 'Пользователи' },
-    { key: 'settings', label: 'Настройки' },
-  ];
-
+const AdminPanel = ({ onSelectTab }) => {
   return (
-    <div style={{ backgroundColor: '#f0f0f0', padding: 10, display: 'flex', gap: 10 }}>
-      {tabs.map(tab => (
-        <button
-          key={tab.key}
-          onClick={() => onSelectTab(tab.key)}
-          style={{
-            fontWeight: activeTab === tab.key ? 'bold' : 'normal',
-            backgroundColor: activeTab === tab.key ? '#ddd' : '#fff'
-          }}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div style={{ border: '1px solid gray', padding: 10, marginBottom: 20 }}>
+      <button onClick={() => onSelectTab('users')}>Пользователи</button>
+      <button onClick={() => onSelectTab('settings')}>Настройки</button>
     </div>
   );
-}
+};
 
 export default AdminPanel;
