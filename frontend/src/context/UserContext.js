@@ -1,8 +1,23 @@
-import { createContext } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 
-// создаём контекст пользователя
-export const UserContext = createContext({
-  id: null,        // ID пользователя
-  name: '',        // Имя
-  avatarUrl: ''    // Аватар
-});
+// Создаем контекст
+const UserContext = createContext();
+
+// Хук для удобного доступа к контексту
+export const useUser = () => useContext(UserContext);
+
+// Провайдер, который хранит данные о текущем пользователе
+export const UserProvider = ({ children }) => {
+  // Здесь будет временный пользователь (позже добавим авторизацию)
+  const [user, setUser] = useState({
+    id: 1,
+    name: "Администратор",
+    isAdmin: true, // 👈 пока TRUE, чтобы панель отображалась
+  });
+
+  return (
+    <UserContext.Provider value={{ user, setUser }}>
+      {children}
+    </UserContext.Provider>
+  );
+};

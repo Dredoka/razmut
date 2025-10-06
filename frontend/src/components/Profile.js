@@ -1,23 +1,30 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { UserContext } from '../context/UserContext'; // ✅ добавили импорт
+import React, { useState, useEffect } from 'react';
+import { useUser } from '../context/UserContext'; // <-- исправленный импорт
 
-function Profile({ isAdmin = false }) {
-  const currentUser = useContext(UserContext); // ✅ читаем контекст
-  const [users, setUsers] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+function Profile() {
+  const { user } = useUser(); // получаем текущего пользователя из контекста
+  const isAdmin = user?.role === 'admin'; // проверяем, админ ли он
+
+  const [users, setUsers] = useState([]);       // список всех пользователей (только для админа)
+  const [selectedId, setSelectedId] = useState(null); // выбранный пользователь
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // 🔹 Загружаем данные
   useEffect(() => {
     if (isAdmin) {
       fetch('http://localhost:8080/api/users')
         .then(res => res.json())
         .then(data => setUsers(data))
         .finally(() => setLoading(false));
-    } else if (currentUser?.id) { // ✅ берём id из контекста
-      fetch(`http://localhost:8080/api/users/${currentUser.id}`)
-        .then(res => res.json())
+    } else {
+      const userId = user?.id || 1; // если нет авторизации, по умолчанию ID=1
+      fetch(`http://localhost:8080/api/users/${userId}`)
+        .then(res => {
+          if (!res.ok) throw new Error('not found');
+          return res.json();
+        })
         .then(data => {
           setSelectedId(data.id);
           setName(data.name || '');
@@ -25,14 +32,16 @@ function Profile({ isAdmin = false }) {
         })
         .finally(() => setLoading(false));
     }
-  }, [isAdmin, currentUser]);
+  }, [isAdmin, user]);
 
+  // 🔹 Выбор пользователя (для админа)
   const handleSelectUser = (user) => {
     setSelectedId(user.id);
     setName(user.name);
     setAvatar(user.avatarUrl);
   };
 
+  // 🔹 Сохранить (обновить или создать)
   const handleSave = () => {
     const userData = { name, avatarUrl: avatar };
     const url = selectedId ? `http://localhost:8080/api/users/${selectedId}` : 'http://localhost:8080/api/users';
@@ -52,7 +61,6 @@ function Profile({ isAdmin = false }) {
             : [...prev, data]
           );
         }
-        // сразу переключаемся на созданного пользователя
         setSelectedId(data.id);
         setName(data.name);
         setAvatar(data.avatarUrl);
@@ -60,6 +68,7 @@ function Profile({ isAdmin = false }) {
       .catch(err => console.error('Ошибка при сохранении:', err));
   };
 
+  // 🔹 Удалить пользователя
   const handleDelete = () => {
     if (!selectedId) return;
     if (!window.confirm('Вы действительно хотите удалить этого пользователя?')) return;
@@ -79,6 +88,7 @@ function Profile({ isAdmin = false }) {
       .catch(err => console.error('Ошибка при удалении:', err));
   };
 
+  // 🔹 Создать нового пользователя
   const handleCreateNew = () => {
     setSelectedId(null);
     setName('');
@@ -91,67 +101,62 @@ function Profile({ isAdmin = false }) {
     <div>
       <h2>Профиль</h2>
 
-      {/* Показываем, какой профиль открыт */}
-      {selectedId ? (
-        <p>Текущий профиль: {name || `ID ${selectedId}`}</p>
-      ) : (
-        isAdmin && <p>Создание нового пользователя</p>
-      )}
+      {/* Показываем, кто вошёл */}
+      <p>Текущий пользователь: <b>{user?.name || 'Гость'}</b> {isAdmin && '(Администратор)'}</p>
 
-      {/* Список пользователей только для админа */}
-      {isAdmin && !selectedId && (
-        <div>
-          <p>Список пользователей:</p>
-          {users.map(user => (
+      {/* Если админ — показываем список пользователей */}
+      {isAdmin && (
+        <div style={{ marginBottom: 20 }}>
+          <h3>Список пользователей:</h3>
+          {users.map(u => (
             <button
-              key={user.id}
-              onClick={() => handleSelectUser(user)}
+              key={u.id}
+              onClick={() => handleSelectUser(u)}
               style={{
-                marginRight: 5,
-                fontWeight: selectedId === user.id ? 'bold' : 'normal'
+                margin: '4px',
+                fontWeight: selectedId === u.id ? 'bold' : 'normal'
               }}
             >
-              {user.name || `ID ${user.id}`}
+              {u.name || `ID ${u.id}`}
             </button>
           ))}
-          <button onClick={handleCreateNew} style={{ marginLeft: 10, backgroundColor: 'green', color: 'white' }}>
-            Создать нового пользователя
+          <button
+            onClick={handleCreateNew}
+            style={{ marginLeft: 10, backgroundColor: 'green', color: 'white' }}
+          >
+            Создать нового
           </button>
         </div>
       )}
 
-      {/* Форма профиля */}
-      {(selectedId || !isAdmin || !selectedId) && (
-        <div style={{ marginTop: 20 }}>
-          <img
-            src={avatar || 'https://picsum.photos/100'}
-            alt="Аватар"
-            width={100}
-            style={{ borderRadius: '50%' }}
-          />
-          <div>
-            <p>Имя:</p>
-            <input value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div style={{ marginTop: '10px' }}>
-            <p>Ссылка на аватар:</p>
-            <input value={avatar} onChange={e => setAvatar(e.target.value)} />
-          </div>
-          <button onClick={handleSave} style={{ marginTop: '10px', marginRight: 10 }}>
-            {selectedId ? 'Сохранить изменения' : 'Создать пользователя'}
-          </button>
-          {isAdmin && selectedId && (
-            <>
-              <button onClick={handleDelete} style={{ marginTop: '10px', backgroundColor: 'red', color: 'white' }}>
-                Удалить пользователя
-              </button>
-              <button onClick={handleCreateNew} style={{ marginTop: '10px', marginLeft: 10, backgroundColor: 'blue', color: 'white' }}>
-                Назад к списку
-              </button>
-            </>
-          )}
+      {/* Редактирование профиля */}
+      <div style={{ marginTop: 20 }}>
+        <img
+          src={avatar || 'https://picsum.photos/100'}
+          alt="Аватар"
+          width={100}
+          style={{ borderRadius: '50%' }}
+        />
+        <div>
+          <p>Имя:</p>
+          <input value={name} onChange={e => setName(e.target.value)} />
         </div>
-      )}
+        <div style={{ marginTop: '10px' }}>
+          <p>Ссылка на аватар:</p>
+          <input value={avatar} onChange={e => setAvatar(e.target.value)} />
+        </div>
+        <button onClick={handleSave} style={{ marginTop: '10px', marginRight: 10 }}>
+          {selectedId ? 'Сохранить' : 'Создать'}
+        </button>
+        {isAdmin && selectedId && (
+          <button
+            onClick={handleDelete}
+            style={{ marginTop: '10px', backgroundColor: 'red', color: 'white' }}
+          >
+            Удалить
+          </button>
+        )}
+      </div>
     </div>
   );
 }
