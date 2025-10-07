@@ -12,4 +12,4 @@
 1. Установите [PostgreSQL](https://www.postgresql.org/).
 2. Создайте базу данных:
    ```sql
-   CREATE DATABASE places_db;
+   CREATE DATABASE razmut;
