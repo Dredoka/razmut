@@ -1,7 +1,6 @@
 package com.soivmi.razmut.security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +13,7 @@ public class JwtTokenUtil {
     private String jwtSecret;
 
     @Value("${jwt.expirationMs}")
-    private long jwtExpirationMs;
+    private int jwtExpirationMs;
 
     public String generateToken(String username) {
         return Jwts.builder()
@@ -37,7 +36,7 @@ public class JwtTokenUtil {
         try {
             Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token);
             return true;
-        } catch (Exception ex) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
