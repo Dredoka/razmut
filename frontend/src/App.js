@@ -1,44 +1,35 @@
-import React, { useState } from 'react';
-import './App.css';
-import Profile from './components/Profile';
-import AdminPanel from './components/AdminPanel';
-import UserManagement from './components/UserManagement';
-import { useUser } from './context/UserContext';
+import React, { useContext } from "react";
+import { UserProvider, UserContext } from "./context/UserContext";
+import AuthForm from "./components/AuthForm";
 
-function App() {
-  const [activeTab, setActiveTab] = useState('map'); // по умолчанию открываем карту
-  const [activeAdminTab, setActiveAdminTab] = useState(null);
-  const { user } = useUser();
+function MainApp() {
+  const { user, logout, authFetch } = useContext(UserContext);
 
-  const renderContent = () => {
-    if (activeAdminTab === 'users') return <UserManagement onSelectTab={setActiveAdminTab} />;
-    if (activeAdminTab === 'settings') return <div>Настройки сайта</div>;
-
-    switch(activeTab) {
-      case 'profile': return <Profile />;
-      case 'map': return <div>Карта</div>;
-      case 'rexis': return <div>Рексис</div>;
-      case 'messages': return <div>Сообщения</div>;
-      case 'search': return <div>Поиск</div>;
-      default: return <Profile />;
+  const callProtected = async () => {
+    const res = await authFetch("http://localhost:8080/api/protected");
+    if (res.ok) {
+      const data = await res.json();
+      alert(JSON.stringify(data));
+    } else {
+      alert("Не удалось получить защищённый ресурс: " + res.status);
     }
   };
 
-  return (
-    <div className="App">
-      <AdminPanel onSelectTab={setActiveAdminTab} />
-      <div className="content">
-        {renderContent()}
-      </div>
-      <div className="bottom-nav">
-        <button onClick={() => { setActiveTab('profile'); setActiveAdminTab(null); }}>Профиль</button>
-        <button onClick={() => { setActiveTab('map'); setActiveAdminTab(null); }}>Карта</button>
-        <button onClick={() => { setActiveTab('rexis'); setActiveAdminTab(null); }}>Рексис</button>
-        <button onClick={() => { setActiveTab('messages'); setActiveAdminTab(null); }}>Сообщения</button>
-        <button onClick={() => { setActiveTab('search'); setActiveAdminTab(null); }}>Поиск</button>
-      </div>
+  return user ? (
+    <div>
+      <h2>Привет, [{user.id}] {user.username}</h2>
+      <button onClick={callProtected}>Вызвать защищённый эндпоинт</button>
+      <button onClick={logout} style={{ marginLeft: 8 }}>Выйти</button>
     </div>
+  ) : (
+    <AuthForm />
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <UserProvider>
+      <MainApp />
+    </UserProvider>
+  );
+}
