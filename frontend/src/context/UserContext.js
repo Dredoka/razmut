@@ -1,43 +1,62 @@
-import { createContext, useState, useEffect } from "react";
+// Файл: frontend/src/context/UserContext.js
+import React, { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
-export const UserContext = createContext();
+export const UserContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const u = localStorage.getItem("user");
-      return u ? JSON.parse(u) : null;
-    } catch {
-      return null;
-    }
-  });
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true); // Флаг для первоначальной проверки авторизации
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", user.token);
-    } else {
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-    }
-  }, [user]);
+    // Эта функция будет проверять при загрузке приложения, авторизован ли пользователь
+    // Например, можно сделать запрос на бэкенд /api/me, который вернет инфо о юзере по cookie
+    const checkUser = async () => {
+        try {
+            // В реальном приложении лучше создать эндпоинт /api/users/me,
+            // который по cookie вернет информацию о текущем пользователе
+            // Пока мы можем просто проверять, есть ли данные в localStorage от прошлого сеанса
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (error) {
+            console.error("Нет активной сессии", error);
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const login = (userData) => setUser(userData);
-  const logout = () => setUser(null);
+    // Проверяем пользователя при первом рендере
+    useEffect(() => {
+        checkUser();
+    }, []);
 
-  // helper: fetch with auth
-  const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem("token");
-    const headers = options.headers ? options.headers : {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    headers["Content-Type"] = headers["Content-Type"] || "application/json";
-    const res = await fetch(url, { ...options, headers });
-    return res;
-  };
+    const login = async (email, password) => {
+        // axios будет автоматически отправлять cookie, которые установит сервер
+        const response = await axios.post('/auth/login', { email, password });
+        
+        // Сохраняем информацию о пользователе, полученную от сервера
+        const userData = response.data;
+        setUser(userData);
+        
+        // Дублируем в localStorage, чтобы быстро восстанавливать сессию при перезагрузке страницы
+        localStorage.setItem('user', JSON.stringify(userData));
+    };
 
-  return (
-    <UserContext.Provider value={{ user, login, logout, authFetch }}>
-      {children}
-    </UserContext.Provider>
-  );
+    const logout = () => {
+        // Здесь нужно будет также отправлять запрос на бэкенд (/auth/logout),
+        // который удалит httpOnly cookie.
+        setUser(null);
+        localStorage.removeItem('user');
+    };
+    
+    // Передаем состояние и функции в провайдер
+    const value = { user, loading, login, logout };
+
+    return (
+        <UserContext.Provider value={value}>
+            {children}
+        </UserContext.Provider>
+    );
 };

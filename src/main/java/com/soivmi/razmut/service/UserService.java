@@ -1,33 +1,50 @@
+// Файл: src/main/java/com/soivmi/razmut/service/UserService.java
 package com.soivmi.razmut.service;
 
+import com.soivmi.razmut.model.AuthRequest;
+import com.soivmi.razmut.model.Role;
 import com.soivmi.razmut.model.User;
 import com.soivmi.razmut.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRepository userRepository;
 
-    public UserService(UserRepository repo, BCryptPasswordEncoder encoder) {
-        this.userRepository = repo;
-        this.passwordEncoder = encoder;
-    }
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    public User register(String username, String password) throws Exception {
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new Exception("Пользователь с таким именем уже существует");
+    /**
+     * Метод для регистрации нового пользователя.
+     * Вся бизнес-логика регистрации теперь находится здесь.
+     */
+    public User registerNewUser(AuthRequest authRequest) {
+        // 1. Проверяем, не занят ли уже email
+        if (userRepository.findByEmail(authRequest.getEmail()).isPresent()) {
+            // Если занят, выбрасываем исключение, которое будет обработано GlobalExceptionHandler
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Пользователь с таким email уже существует");
         }
-        String encoded = passwordEncoder.encode(password);
-        User u = new User(username, encoded);
-        return userRepository.save(u);
+
+        // 2. Создаем нового пользователя
+        User newUser = new User();
+        newUser.setEmail(authRequest.getEmail());
+        newUser.setPassword(passwordEncoder.encode(authRequest.getPassword()));
+        // 3. Присваиваем роль по умолчанию - USER
+        newUser.setRoles(Collections.singleton(Role.USER));
+
+        return userRepository.save(newUser);
     }
 
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }

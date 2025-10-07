@@ -1,35 +1,44 @@
-import React, { useContext } from "react";
-import { UserProvider, UserContext } from "./context/UserContext";
-import AuthForm from "./components/AuthForm";
+// Файл: frontend/src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { UserProvider } from './context/UserContext';
+import AuthForm from './components/AuthForm';
+import Profile from './components/Profile';
+import AdminPanel from './components/AdminPanel';
+import ProtectedRoute from './components/ProtectedRoute'; // <-- Импортируем
 
-function MainApp() {
-  const { user, logout, authFetch } = useContext(UserContext);
+function App() {
+    return (
+        <UserProvider>
+            <Router>
+                <div>
+                    <nav>
+                        {/* Ваша навигация */}
+                    </nav>
 
-  const callProtected = async () => {
-    const res = await authFetch("http://localhost:8080/api/protected");
-    if (res.ok) {
-      const data = await res.json();
-      alert(JSON.stringify(data));
-    } else {
-      alert("Не удалось получить защищённый ресурс: " + res.status);
-    }
-  };
+                    <Routes>
+                        {/* Публичные роуты */}
+                        <Route path="/" element={<h1>Добро пожаловать!</h1>} />
+                        <Route path="/login" element={<AuthForm isRegister={false} />} />
+                        <Route path="/register" element={<AuthForm isRegister={true} />} />
 
-  return user ? (
-    <div>
-      <h2>Привет, [{user.id}] {user.username}</h2>
-      <button onClick={callProtected}>Вызвать защищённый эндпоинт</button>
-      <button onClick={logout} style={{ marginLeft: 8 }}>Выйти</button>
-    </div>
-  ) : (
-    <AuthForm />
-  );
+                        {/* Защищенные роуты */}
+                        <Route element={<ProtectedRoute />}>
+                            <Route path="/profile" element={<Profile />} />
+                        </Route>
+
+                        {/* Роуты только для админа */}
+                        <Route element={<ProtectedRoute adminOnly={true} />}>
+                            <Route path="/admin" element={<AdminPanel />} />
+                        </Route>
+                        
+                        {/* Страница не найдена */}
+                        <Route path="*" element={<h1>404: Страница не найдена</h1>} />
+                    </Routes>
+                </div>
+            </Router>
+        </UserProvider>
+    );
 }
 
-export default function App() {
-  return (
-    <UserProvider>
-      <MainApp />
-    </UserProvider>
-  );
-}
+export default App;

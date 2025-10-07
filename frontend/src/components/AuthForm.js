@@ -1,64 +1,77 @@
-import { useState, useContext } from "react";
-import { UserContext } from "../context/UserContext";
+// Файл: frontend/src/components/AuthForm.js
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { UserContext } from '../context/UserContext';
 
-export default function AuthForm() {
-  const { login } = useContext(UserContext);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
-  const [error, setError] = useState("");
+const AuthForm = ({ isRegister }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState(null); // Стейт для хранения текста ошибки
+    const [loading, setLoading] = useState(false); // Стейт для индикатора загрузки
 
-  const api = "http://localhost:8080/api/auth";
+    const navigate = useNavigate();
+    const { login } = useContext(UserContext); // Получаем функцию login из контекста
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const res = await fetch(`${api}/${isRegister ? "register" : "login"}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data?.error || JSON.stringify(data);
-        throw new Error(msg);
-      }
-      // ожидаем { token, username, id? }
-      const userData = {
-        username: data.username,
-        token: data.token,
-        id: data.id,
-      };
-      login(userData);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
 
-  return (
-    <div style={{ maxWidth: 360 }}>
-      <h3>{isRegister ? "Регистрация" : "Вход"}</h3>
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Логин"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        /><br/>
-        <input
-          placeholder="Пароль"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        /><br/>
-        <button type="submit">{isRegister ? "Зарегистрироваться" : "Войти"}</button>
-      </form>
-      <button onClick={() => setIsRegister(!isRegister)} style={{ marginTop: 8 }}>
-        {isRegister ? "Уже есть аккаунт? Войти" : "Создать аккаунт"}
-      </button>
-      {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
-    </div>
-  );
-}
+        try {
+            if (isRegister) {
+                // Логика регистрации
+                await axios.post('/auth/register', { email, password });
+                alert('Регистрация прошла успешно! Теперь вы можете войти.');
+                navigate('/login'); // Перенаправляем на страницу входа
+            } else {
+                // Логика входа
+                await login(email, password); // Вызываем login из контекста
+                navigate('/profile'); // Перенаправляем в профиль после успешного входа
+            }
+        } catch (err) {
+            // Обрабатываем ошибки от сервера
+            const errorMessage = err.response?.data?.message || 'Произошла неизвестная ошибка';
+            setError(errorMessage);
+            console.error(err);
+        } finally {
+            setLoading(false); // В любом случае убираем индикатор загрузки
+        }
+    };
+
+    return (
+        <div>
+            <h2>{isRegister ? 'Регистрация' : 'Вход'}</h2>
+            <form onSubmit={handleSubmit}>
+                <div>
+                    <label>Email:</label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Пароль:</label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength="6"
+                    />
+                </div>
+                {/* Показываем блок с ошибкой, если она есть */}
+                {error && <p style={{ color: 'red' }}>{error}</p>}
+                
+                {/* Блокируем кнопку на время запроса */}
+                <button type="submit" disabled={loading}>
+                    {loading ? 'Загрузка...' : (isRegister ? 'Зарегистрироваться' : 'Войти')}
+                </button>
+            </form>
+        </div>
+    );
+};
+
+export default AuthForm;

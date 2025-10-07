@@ -1,13 +1,18 @@
 package com.soivmi.razmut.model;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class AuthRequest {
-    private String username;
+
+    @NotBlank(message = "Email не может быть пустым")
+    @Email(message = "Некорректный формат email")
+    private String email;
+
+    @NotBlank(message = "Пароль не может быть пустым")
+    @Size(min = 6, max = 30, message = "Пароль должен содержать от 6 до 30 символов")
     private String password;
 }
